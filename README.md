@@ -121,3 +121,22 @@ do the following:
   - No warranty, no support, use at your own risk.
 
 See the license file for more details.
+
+## FAQ
+
+> Will there be a Firefox version?
+
+Only if one of you makes one.
+
+> Can you add *(insert any feature)* to this extension?
+
+Probably not. I'm happy to try out your version if you add any cool stuff.
+
+> I think it should be different. I think it should be...
+
+Okay. Just make it.
+
+> Can you make a YouTube video guessing our Steam games?
+
+Sure, I'll do that on my YT channel (@jonastyroller) and Discord. Sounds like a great idea. 
+
