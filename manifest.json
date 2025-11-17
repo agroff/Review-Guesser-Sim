@@ -1,8 +1,17 @@
 {
-  "name": "Jonas Review Guesser",
-  "version": "1.1.0",
+  "name": "Steam Publisher Simulator",
+  "version": "0.0.1",
   "manifest_version": 3,
   "description": "Turns Steam page into a guessing game.",
+  "icons": {
+    "16": "images/icon.png",
+    "32": "images/icon.png",
+    "48": "images/icon.png",
+    "128": "images/icon.png"
+  },
+  "background": {
+    "service_worker": "src/background.js"
+  },
   "content_scripts": [
     {
       "matches": [
@@ -17,11 +26,15 @@
         "src/nextGame.js",
         "src/main.js"
       ],
-      "css": ["content.css"],
+      "css": [
+        "content.css"
+      ],
       "run_at": "document_start"
     }
   ],
-  "permissions": [],
+  "permissions": [
+    "storage"
+  ],
   "web_accessible_resources": [
     {
       "resources": [

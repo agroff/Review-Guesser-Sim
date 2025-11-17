@@ -1,5 +1,6 @@
 (function (root) {
   const ns = (root.ReviewGuesser = root.ReviewGuesser || {});
+  const getCurrentGameData = ns.getCurrentGameData;
 
   // ---------------------------------------------------------------------------
   // CSV loading + caching
@@ -12,7 +13,7 @@
     "data/Batch_3.csv",
     "data/Batch_4.csv",
     "data/Batch_5.csv",
-    "data/Batch_6.csv"
+    "data/Batch_6.csv",
   ];
 
   // Simple in-memory cache: path -> Promise<number[]>
@@ -31,9 +32,7 @@
     }
 
     const url =
-      typeof chrome !== "undefined" &&
-      chrome.runtime &&
-      chrome.runtime.getURL
+      typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.getURL
         ? chrome.runtime.getURL(relativePath)
         : relativePath;
 
@@ -101,8 +100,22 @@
   async function getSmartRandomAppId() {
     if (!BATCH_FILES.length) return getPureRandomAppId();
 
-    const file =
-      BATCH_FILES[Math.floor(Math.random() * BATCH_FILES.length)];
+    const current = await getCurrentGameData();
+    const money = current?.currentMoney || 0;
+
+    // If the user is broke, fall back to Pure Random
+    if (money <= 0) {
+      return getPureRandomAppId();
+    }
+
+    let fileIndex = 0;
+    if (money > 25000) fileIndex = 1;
+    if (money > 50000) fileIndex = 2;
+    if (money > 100000) fileIndex = 3;
+    if (money > 10000000) fileIndex = 4;
+    if (money > 100000000) fileIndex = 5;
+    const file = BATCH_FILES[fileIndex];
+    ns.log("picking smart random from", file, "with money", money);  
     const ids = await loadCsvIds(file);
     const id = pickRandomId(ids);
 
@@ -132,9 +145,7 @@
       appid = 570;
     }
 
-    window.location.assign(
-      `https://store.steampowered.com/app/${appid}/`
-    );
+    window.location.assign(`https://store.steampowered.com/app/${appid}/`);
   }
 
   /**
@@ -170,16 +181,13 @@
   // ---------------------------------------------------------------------------
 
   function installNextGameButtonOnOops() {
-    const header = document.querySelector(
-      ".page_header_ctn .page_content"
-    );
+    const header = document.querySelector(".page_header_ctn .page_content");
     if (!header) return;
 
     // Avoid duplicates – if we already placed any ext-next-game, stop.
     if (header.querySelector(".ext-next-game")) return;
 
-    const target =
-      header.querySelector("h2.pageheader") || header;
+    const target = header.querySelector("h2.pageheader") || header;
 
     // Wrap both buttons in a simple row
     const pureBtn = makeNextGameButton("Next (Raw)", "pure");
@@ -213,16 +221,13 @@
     if (container.querySelector(".ext-next-game")) return;
 
     // Remove the original Community Hub button, if present
-    const hubBtn = container.querySelector(
-      "a.btnv6_blue_hoverfade.btn_medium"
-    );
+    const hubBtn = container.querySelector("a.btnv6_blue_hoverfade.btn_medium");
     if (hubBtn) hubBtn.remove();
 
-    const pureBtn = makeNextGameButton("Next (Raw)", "pure");
-    const smartBtn = makeNextGameButton("Next (Balanced)", "smart");
+    // const pureBtn = makeNextGameButton("Next (Raw)", "pure");
+    const smartBtn = makeNextGameButton("Next", "smart");
 
     // Let Steam's layout handle positioning; just drop them in order
-    container.appendChild(pureBtn);
     container.appendChild(smartBtn);
   }
 

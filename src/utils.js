@@ -61,6 +61,19 @@
   }
 
   /**
+   * Formats a monetary amount.
+   * @param {number} amount
+   * @returns {string}
+   */
+  function formatMoney(amount) {
+    return amount.toLocaleString(undefined, {
+      style: "currency",
+      currency: "USD",
+      maximumFractionDigits: 2,
+    });
+  }
+
+  /**
    * Format integers with a SPACE as the thousands separator.
    * Example: 24323 -> "24 323"
    *
@@ -76,4 +89,5 @@
   ns.normalizeSpaces = normalizeSpaces;
   ns.parseReviewCountRaw = parseReviewCountRaw;
   ns.formatNum = formatNum;
+  ns.formatMoney = formatMoney;
 })(window);

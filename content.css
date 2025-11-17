@@ -1,5 +1,7 @@
 /* If you use it elsewhere */
-.ext-hide { display: none !important; }
+.ext-hide {
+  display: none !important;
+}
 
 /* Hide Steam's built-in review summary UI early to avoid spoiler flash */
 .review_score_summaries,
@@ -24,31 +26,35 @@
   visibility: visible !important;
 }
 
-
 /* Guessing game UI */
 .ext-steam-guess {
-  display: grid;
+  display: flex;
   gap: 8px;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  flex-direction: column;
   align-items: stretch;
   margin: 8px 0;
 }
 
 .ext-steam-guess button {
   padding: 10px 12px;
-  border: 1px solid rgba(255,255,255,.25);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 10px;
-  background: rgba(255,255,255,.08);
+  background: rgba(255, 255, 255, 0.08);
   cursor: pointer;
   font: 600 13px/1.2 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-  color: #fff;               /* always white text */
-  transition: transform .06s ease, background .15s ease, border-color .15s ease;
+  color: #fff; /* always white text */
+  transition: transform 0.06s ease, background 0.15s ease,
+    border-color 0.15s ease;
 }
 
-.ext-steam-guess button:hover { transform: translateY(-1px); }
+.ext-steam-guess button:hover {
+  transform: translateY(-1px);
+}
 
 /* Keep buttons fully visible even when disabled */
-.ext-steam-guess button[disabled] { opacity: 1; }
+.ext-steam-guess button[disabled] {
+  opacity: 1;
+}
 
 /* Result states */
 .ext-steam-guess button.correct {
@@ -64,7 +70,7 @@
 
 .ext-steam-guess .ext-subtle {
   grid-column: 1/-1;
-  opacity: .8;
+  opacity: 0.8;
   font-size: 12px;
 }
 
@@ -75,7 +81,6 @@
   font-size: 13px;
 }
 
-
 /* Mask everything in the reviews container except our widget */
 .ext-mask-reviews > *:not(.ext-steam-guess) {
   display: none !important;
@@ -84,7 +89,7 @@
 /* Waiting message */
 .ext-steam-guess .ext-wait {
   grid-column: 1/-1;
-  opacity: .9;
+  opacity: 0.9;
   font-size: 13px;
   font-weight: 600;
 }
@@ -92,4 +97,67 @@
 /* Small gap between our two Next Game buttons */
 .ext-next-game + .ext-next-game {
   margin-left: 8px;
+}
+
+.ext-invest-query {
+  padding: 20px;
+  text-align: center;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+.ext-invest-query button {
+  margin: 6px;
+}
+
+.ext-invest-result-header {
+  padding: 8px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  text-align: center;
+  color: #fff;
+}
+
+.ext-profit {
+  padding: 8px;
+  font-weight: 700;
+  text-align: center;
+  border-radius: 8px;
+  margin: auto;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  width: fit-content;
+}
+.ext-profit-positive {
+  background-color: #1f6f2a;
+  color: #fff;
+}
+.ext-profit-negative {
+  background-color: #8b1d1d;
+  color: #fff;
+}
+.ext-profit-faded {
+  opacity: 0.2;
+}
+
+#ext-top-bar-container {
+  position: fixed;
+  z-index: 2000;
+}
+.ext-game-top-bar {
+  width: 600px;
+  background-color: #2a2a2a;
+  padding: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom-right-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.current-money-label {
+  padding:6px;
+  font-weight: 600;
+  color: #d59e05;
+  border-radius: 4px;
+  border: 1px solid #d59e05;
+  background-color: #561818;
 }

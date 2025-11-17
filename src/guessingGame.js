@@ -7,167 +7,67 @@
   const hideAllSteamReviewCounts = ns.hideAllSteamReviewCounts;
   const waitForAnyReviewCount = ns.waitForAnyReviewCount;
   const formatNum = ns.formatNum;
+  const formatMoney = ns.formatMoney;
 
-  function buildGuessSet(trueCount) {
-    const MIN_ANSWERS = 6;
-    const CAP = 200_000_000_000;
+  const reviewsPerSale = 33;
 
-    // Normalise the true answer and cap it
-    const TC = Math.max(
-      0,
-      Math.min(CAP, Math.trunc(Number(trueCount) || 0))
-    );
+  let currentMoney = 100000000;
+  let currentInvestmentAsk = 0;
 
-    const answers = new Set();
-    answers.add(TC);
-
-    const randInt = (min, max) =>
-      Math.floor(Math.random() * (max - min + 1)) + min;
-
-    // Random minimum step between answers when going upwards (40–60)
-    const MIN_STEP_INCREASE = randInt(40, 60);
-
-    // Random limit for how many *downward* options we may generate: 2–5
-    const maxDownGuesses = randInt(4, 5);
-
-    //
-    // 1) DOWNWARDS PHASE (divide by 5 with noise) — ONLY if TC >= MIN_STEP_INCREASE.
-    //    Also limited to maxDownGuesses.
-    //
-    if (TC >= MIN_STEP_INCREASE) {
-      let current = TC;
-      let downCount = 0;
-
-      while (answers.size < MIN_ANSWERS && downCount < maxDownGuesses) {
-        if (current === 0) break;
-
-        let divided = Math.floor(current / 5);
-
-        // No progress? bail out to avoid infinite loops
-        if (divided === current) break;
-
-        // Small random wobble: [-3, 3]
-        const noise = randInt(-3, 3);
-        let next = divided + noise;
-
-        // Clamp so it's still lower than the previous value and >= 0
-        if (next < 0) next = 0;
-        if (next >= current) next = current - 1;
-
-        const beforeSize = answers.size;
-        answers.add(next);
-        if (answers.size > beforeSize) {
-          downCount++;
-        }
-
-        current = next;
-
-        // Stop downwards once we've reached below 50 (original rule)
-        if (current < 50) break;
-      }
-    }
-
-    //
-    // 2) UPWARDS PHASE: multiply by 5 with noise and enforce a random min distance (40–60).
-    //    This fills remaining slots with higher values.
-    //
-    let current = TC;
-
-    while (answers.size < MIN_ANSWERS) {
-      // Base "multiply by 5"
-      let base = current * 5;
-
-      // Small random wobble: [-2, 3]  (add up to 3, remove up to 2)
-      const noise = randInt(-2, 3);
-      let candidate = base + noise;
-
-      if (candidate < 0) candidate = 0;
-
-      // Enforce a minimum increase of MIN_STEP_INCREASE over the previous value
-      if (candidate < current + MIN_STEP_INCREASE) {
-        candidate = current + MIN_STEP_INCREASE;
-      }
-
-      // Cap very large values
-      if (candidate > CAP) candidate = CAP;
-
-      // Avoid duplicates by nudging up a bit if needed
-      let tries = 0;
-      while (answers.has(candidate) && candidate < CAP && tries < 10) {
-        candidate++;
-        tries++;
-      }
-
-      if (answers.has(candidate)) {
-        // No more unique space reasonably nearby; stop the upward phase.
-        break;
-      }
-
-      answers.add(candidate);
-      current = candidate;
-    }
-
-    //
-    // 3) Fallback: if we *still* have fewer than 6 answers,
-    //    just fill upwards by +1 from the current max.
-    //
-    if (answers.size < MIN_ANSWERS) {
-      let maxVal = Math.max(...answers);
-      while (answers.size < MIN_ANSWERS && maxVal < CAP) {
-        maxVal++;
-        if (!answers.has(maxVal)) {
-          answers.add(maxVal);
-        }
-      }
-    }
-
-    //
-    // 4) LOWEST-OPTION TWEAK:
-    //    If the lowest option is NOT the correct answer, then with 50% chance
-    //    replace it with 0 or 1 (chosen randomly), while keeping all answers distinct.
-    //
-    if (answers.size > 0) {
-      const values = Array.from(answers);
-      let minVal = values[0];
-      for (let i = 1; i < values.length; i++) {
-        if (values[i] < minVal) minVal = values[i];
-      }
-
-      if (minVal !== TC && Math.random() < 0.5 && minVal < 20) {
-        const candidates = Math.random() < 0.5 ? [0, 1] : [1, 0];
-
-        for (const val of candidates) {
-          // If replacing with the same value, no point; skip
-          if (val === minVal) {
-            // already that value, but it's still 0 or 1, so that's okay
-            break;
-          }
-          // Avoid creating duplicates: allow if it's not already in the set
-          if (!answers.has(val)) {
-            answers.delete(minVal);
-            answers.add(val);
-            break;
-          }
-        }
-      }
-    }
-
-    //
-    // 5) Convert to array and shuffle so the correct answer isn’t in a fixed spot.
-    //
-    const picks = Array.from(answers);
-
-    for (let i = picks.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [picks[i], picks[j]] = [picks[j], picks[i]];
-    }
-
-    return picks;
+  function sendMessage(type, data = {}) {
+    return new Promise((resolve) => {
+      chrome.runtime.sendMessage({ type, data }, resolve);
+    });
   }
 
+  async function log(...args) {
+    const response = await sendMessage("log", { args });
+    return response;
+  }
 
+  // Get current game data
+  async function getCurrentGameData() {
+    const response = await sendMessage("getCurrentGame");
+    return response.success ? response.game : null;
+  }
 
+  // Track an investment
+  async function trackInvestment(investmentCost, returnedIncome) {
+    const response = await sendMessage("trackInvestment", {
+      investmentCost,
+      returnedIncome,
+    });
+    return response;
+  }
 
+  // Start a new game
+  async function startNewGame() {
+    const response = await sendMessage("startNewGame");
+    return response.success ? response.game : null;
+  }
+
+  /**
+   * Generates a random number from a normal distribution.
+   * @param {number} mean - The center of the bell curve (e.g., 10000).
+   * @param {number} stdDev - The standard deviation (spread) of the curve (e.g., 1500).
+   * @returns {number} A normally distributed random number.
+   */
+  function getRandomNormal(mean, stdDev) {
+    let u1, u2, z1; // z1 is our standard normal random number
+
+    u1 = 0;
+    while (u1 === 0) u1 = Math.random(); // [0, 1) -> (0, 1)
+    u2 = Math.random(); // [0, 1)
+
+    // Box-Muller transform
+    // This creates two "standard normal" random numbers (mean 0, stdDev 1)
+    const z2 = Math.sqrt(-2.0 * Math.log(u1)) * Math.sin(2.0 * Math.PI * u2);
+    z1 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
+
+    // Now, we scale and shift the standard normal number (z1)
+    // to match the mean and standard deviation we want.
+    return z1 * stdDev + mean;
+  }
 
   function ensureLoadingWidget(container, appId) {
     let wrap = container.querySelector(
@@ -196,6 +96,217 @@
     }
     container.classList.add("ext-mask-reviews");
     return wrap;
+  }
+
+  function getExpectedReviewCount(actualReviewCount) {
+    // Base review count with a minimum padding
+    let reviewCount = actualReviewCount;
+    let stdDevPercent = 0.2;
+    if (actualReviewCount < 6) {
+      reviewCount = actualReviewCount + 3;
+      stdDevPercent = 0.4;
+    }
+    const stdDev = reviewCount * stdDevPercent;
+    // To avoid centering too much around the mean, shift up or down by one stdDev randomly
+    // with a slight negative bias to make it easier to profit
+    const shift = Math.random() < 0.66 ? -stdDev : stdDev;
+
+    const randomCount = getRandomNormal(reviewCount + shift, stdDev);
+    return Math.round(randomCount);
+  }
+
+  function getRevenue(price, reviewCount) {
+    const estimatedSales = reviewCount * reviewsPerSale;
+    const revenue = estimatedSales * price;
+    return revenue;
+  }
+
+  function getReviews(price, revenue) {
+    if (price === 0) return 0;
+    const estimatedSales = revenue / price;
+    const reviewCount = Math.round(estimatedSales / reviewsPerSale);
+    return reviewCount;
+  }
+
+  function getDeveloperName() {
+    const devElem = document.querySelector(".dev_row .summary.column a");
+    if (devElem) {
+      return devElem.textContent.trim();
+    }
+    return "Unknown Developer";
+  }
+
+  function getPrice() {
+    let priceElem = document.querySelector(
+      ".game_area_purchase_game_wrapper .game_purchase_price"
+    );
+    if (!priceElem) {
+      priceElem = document.querySelector(
+        ".game_purchase_price, .discount_final_price"
+      );
+    }
+    if (priceElem) {
+      const priceText = priceElem.textContent.trim();
+      if (priceText === "" || /free/i.test(priceText)) {
+        return 0;
+      }
+      return parseFloat(priceText.replace(/[^0-9.-]+/g, ""));
+    }
+    return 0;
+  }
+
+  function roundToNearest(value, step) {
+    return Math.round(value / step) * step;
+  }
+  function getRoundPrice(price) {
+    if (price === 0) return "0";
+    if (price < 100) return roundToNearest(price, 10);
+    if (price < 1000) return roundToNearest(price, 100);
+    if (price < 10000) return roundToNearest(price, 1000);
+    if (price < 100000) return roundToNearest(price, 10000);
+    return roundToNearest(price, 100000);
+  }
+
+  async function renderGameTopBar() {
+    let currentGame = await getCurrentGameData();
+    currentMoney = currentGame.currentMoney;
+    const html = `<div class="ext-game-top-bar">
+      <div class="ext-top-bar-current-money">
+        <div class="current-money-label">
+        $${currentMoney.toLocaleString()}
+        </div>
+      </div>
+      <div class="ext-top-bar-highest-money">
+        Max Money: $${currentGame.highestMoney.toLocaleString()}
+      </div>
+      <div class="ext-top-bar-restart">
+        <button type="button" class="ext-restart-game-btn">Start New Game</button>
+      </div>
+    </div>`;
+    if (!document.body.querySelector("#ext-top-bar-container")) {
+      const div = document.createElement("div");
+      div.id = "ext-top-bar-container";
+      document.body.insertAdjacentElement("afterbegin", div);
+    }
+    const container = document.body.querySelector("#ext-top-bar-container");
+    container.innerHTML = html;
+
+    if (currentMoney < currentInvestmentAsk) {
+      const invQueryDiv = document.querySelector(".ext-invest-query");
+      invQueryDiv.innerHTML = `Insufficient funds to invest in this game. <br />
+      <a href="javascript:void(0);" class="ext-invest-no">Show Results</a>`;
+    }
+    const investNoBtn = document.querySelector(".ext-invest-no");
+    investNoBtn.addEventListener("click", () => {
+      const queryDiv = document.querySelector(".ext-invest-query");
+      const resultDiv = document.querySelector("#ext-invest-result");
+      const profitDiv = document.querySelector(".ext-profit");
+      queryDiv.style.display = "none";
+      resultDiv.style.display = "block";
+      profitDiv.classList.add("ext-profit-faded");
+    });
+
+    const restartBtn = document.querySelector(".ext-restart-game-btn");
+    restartBtn.addEventListener("click", async () => {
+      const confirmed = confirm(
+        "Are you sure you want to start a new game? Your current game progress will be lost."
+      );
+      if (confirmed) {
+        await startNewGame();
+        const nextButton = document.querySelector(".ext-next-game");
+        if (nextButton) {
+          nextButton.click();
+        }
+      }
+    });
+  }
+
+  function renderGameUi(wrap, reviewCount) {
+    renderGameTopBar();
+    const developer = getDeveloperName();
+    const price = getPrice();
+    const revenue = getRevenue(price, reviewCount);
+    const expectedCount = getExpectedReviewCount(reviewCount);
+    const expectedRevenue = getRevenue(price, expectedCount);
+    const investment = getRoundPrice(expectedRevenue);
+    currentInvestmentAsk = investment;
+    const breakEvenReviews = getReviews(price, investment);
+
+    let income = revenue;
+    if (revenue > investment) {
+      const revShare = (revenue - investment) * 0.5;
+      income = investment + revShare;
+    }
+    const profit = income - investment;
+    wrap.innerHTML = `
+      <div>
+        <strong>${developer}</strong> is asking for an investment of <strong>$${investment}</strong> to publish thier game.<br /><br />
+        <table>
+          <tr>
+          <td>ASK:</td>
+          <td>${formatMoney(investment)}</td>
+          </tr>
+          <tr>
+          <td>REV SPLIT:</td>
+          <td>50% after costs recovered</td>
+          </tr>
+          <tr>
+          <td>BREAK EVEN:&nbsp;&nbsp;</td>
+          <td>~${formatNum(breakEvenReviews)} reviews 
+          (${breakEvenReviews * reviewsPerSale} sales @ ${formatMoney(
+      price
+    )} = ${formatMoney(breakEvenReviews * reviewsPerSale * price)})</td>
+          </tr>
+        </table>
+      </div>
+      <div class="ext-invest-query">
+        Invest in this game? <br />
+        <button type="button" class="ext-invest-yes">Yes</button>
+        <button type="button" class="ext-invest-no">No</button>
+      </div>
+      <div id="ext-invest-result" style="display:none;">
+      <div class="ext-invest-result-header">
+        RESULTS: ${formatNum(reviewCount)} reviews
+      </div>
+      <table style="margin:auto;">
+        <tr>
+          <td>Sales:</td>
+          <td>${reviewCount * reviewsPerSale} units @ ${formatMoney(price)}</td>
+        </tr>
+        <tr>
+          <td>Total Revenue:&nbsp;&nbsp;</td>
+          <td>${formatMoney(revenue)}</td>
+        </tr>
+        <tr>
+          <td>Income:</td>
+          <td>${formatMoney(income)}</td>
+        </tr>
+      </table>
+      
+      <div class="ext-profit ${
+        profit >= 0 ? "ext-profit-positive" : "ext-profit-negative"
+      }">
+        PROFIT: ${formatMoney(profit)}
+      </div>
+      </div>
+    `;
+
+    const investYesBtn = wrap.querySelector(".ext-invest-yes");
+    const investNoBtn = wrap.querySelector(".ext-invest-no");
+    const resultDiv = wrap.querySelector("#ext-invest-result");
+    const queryDiv = wrap.querySelector(".ext-invest-query");
+    const profitDiv = wrap.querySelector(".ext-profit");
+    investYesBtn.addEventListener("click", async () => {
+      queryDiv.style.display = "none";
+      resultDiv.style.display = "block";
+      await trackInvestment(investment, income);
+      renderGameTopBar();
+    });
+    investNoBtn.addEventListener("click", () => {
+      queryDiv.style.display = "none";
+      resultDiv.style.display = "block";
+      profitDiv.classList.add("ext-profit-faded");
+    });
   }
 
   async function injectSteamGuessingGame() {
@@ -249,51 +360,15 @@
     }
 
     if (wrap.dataset.state !== "ready") {
-      const guesses = buildGuessSet(trueCount);
-      wrap.dataset.guesses = JSON.stringify(guesses);
-      wrap.innerHTML = "";
-
-      const btns = [];
-      guesses.forEach((val) => {
-        const b = document.createElement("button");
-        b.type = "button";
-        b.dataset.value = String(val);
-        b.textContent = formatNum(val);
-        btns.push(b);
-        wrap.appendChild(b);
-      });
-
-      const note = document.createElement("div");
-      note.className = "ext-subtle";
-      note.textContent =
-        "Guess the All Reviews count (all languages).";
-      wrap.appendChild(note);
-
-      const correct = trueCount;
-      const mark = (picked) => {
-        if (wrap.dataset.locked === "1") return;
-        wrap.dataset.locked = "1";
-        btns.forEach((btn) => {
-          const val = parseInt(btn.dataset.value, 10);
-          if (val === correct) btn.classList.add("correct");
-          if (val === picked && val !== correct)
-            btn.classList.add("wrong");
-          btn.disabled = true;
-          btn.setAttribute("aria-disabled", "true");
-          btn.style.pointerEvents = "none";
-        });
-      };
-      btns.forEach((b) =>
-        b.addEventListener(
-          "click",
-          () => mark(parseInt(b.dataset.value, 10)),
-          { once: true }
-        )
-      );
+      renderGameUi(wrap, trueCount);
 
       wrap.dataset.state = "ready";
     }
   }
 
   ns.injectSteamGuessingGame = injectSteamGuessingGame;
+  ns.sendMessage = sendMessage;
+  ns.startNewGame = startNewGame;
+  ns.getCurrentGameData = getCurrentGameData;
+  ns.log = log;
 })(window);
