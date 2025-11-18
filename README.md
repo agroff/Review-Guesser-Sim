@@ -1,34 +1,12 @@
-# Jonas Review Guesser
+# Steam Publish Simulator
 
 ## Overview
 
-Jonas Review Guesser is a Chrome extension that turns Steam into a review guessing game. It hides the review count (and some other clues) on Steam store pages and asks you to guess the number of reviews instead. On top of that, it adds buttons at the top of the page that take you to completely random games on Steam, giving you a new way to browse the store, step outside your usual bubble, and gradually improve your intuition for how successful different games are.
+Steam Publish Simulator is a fork of Jonas Review Guesser. It is a guessing game where you look at steam pages with some details hidden, and
+decide if you want to invest in the game. As you get more money, you'll see more successful games. Keep investing until you're rich!
 
 ![preview image](images/GuessExample.jpg)
 
-### Random Game Navigation
-
-- **Next (Raw)**
-  - Sends you to a completely random Steam game.
-  - Note: because this picks from *all* Steam games, you will often see:
-    - Lower quality games
-    - Shovelware / obscure titles
-- **Next (Balanced)**
-  - Sends you to a random Steam game with a bias toward “better” games.
-  - This can still bring you to any game on Steam but the distribution is more biased towards better games:
-    - Surfaces more recognizable / higher-quality titles more often.
-    - Still maintains some variety so you don’t only see top hits.
-
-## Limitations
-
-It is a very simple application with many limitations:
-- **Bug: ** Current version only works when your Steam is set to English.
-- Somewhat hinders your normal Steam browsing experience (you need to manually turn the Plugin off).
-- The database of appIDs is not automatically updated so the newer titles might not be included.
-- Sometimes the extension brings you to a Steam page that is not or no longer available in your region.
-- Lacking a lot of features that might be cool e.g. filtering by tag, entering the guess into a text field, etc. etc.
-
-It is not my plan to work on this too much more so if you'd like to see these limitations resolved, fork it and do it yourself! I'd be happy to try out your version. :)
 
 ## Installation (Local Chrome Extension)
 
