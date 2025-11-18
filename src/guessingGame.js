@@ -162,8 +162,8 @@
     if (price === 0) return "0";
     if (price < 100) return roundToNearest(price, 10);
     if (price < 1000) return roundToNearest(price, 100);
-    if (price < 10000) return roundToNearest(price, 1000);
-    if (price < 100000) return roundToNearest(price, 10000);
+    if (price < 50000) return roundToNearest(price, 1000);
+    if (price < 100000) return roundToNearest(price, 5000);
     return roundToNearest(price, 100000);
   }
 
@@ -180,7 +180,7 @@
         Max Money: $${currentGame.highestMoney.toLocaleString()}
       </div>
       <div class="ext-top-bar-restart">
-        <button type="button" class="ext-restart-game-btn">Start New Game</button>
+        <a role="button" class="ext-restart-game-btn">Start New Game</a>
       </div>
     </div>`;
     if (!document.body.querySelector("#ext-top-bar-container")) {
@@ -221,8 +221,25 @@
     });
   }
 
+  function renderExtLogo() {
+    const sibling = document.querySelector("#global_header .content");
+    if (!sibling) return;
+
+    let logo = document.createElement("div");
+    logo.innerHTML = `Publish Simulator`;
+    logo.className = "ext-logo";
+
+    const existingLogo = document.querySelector(".ext-logo");
+    if (existingLogo) {
+      existingLogo.replaceWith(logo);
+    } else {
+      sibling.insertAdjacentElement("afterbegin", logo);
+    }
+  }
+
   function renderGameUi(wrap, reviewCount) {
     renderGameTopBar();
+    renderExtLogo();
     const developer = getDeveloperName();
     const price = getPrice();
     const revenue = getRevenue(price, reviewCount);

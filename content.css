@@ -144,7 +144,6 @@
 }
 .ext-game-top-bar {
   width: 600px;
-  background-color: #2a2a2a;
   padding: 4px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   border-right: 1px solid rgba(255, 255, 255, 0.1);
@@ -152,12 +151,48 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  background-color: #182535;
+  padding-right: 12px;
 }
 .current-money-label {
-  padding:6px;
+  margin-left: 60px;
+  font-family: monospace;
+  padding: 6px 10px;
   font-weight: 600;
-  color: #d59e05;
+  color: #ffd561;
   border-radius: 4px;
-  border: 1px solid #d59e05;
-  background-color: #561818;
+  border: 1px solid #ffd561;
+  background-color: #991f95;
+}
+.ext-top-bar-highest-money {
+  font-family: "Motiva Sans";
+  font-weight: 500;
+  color: #ffffff;
+}
+.ext-restart-game-btn {
+  color: #67c1f5;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+.ext-restart-game-btn:hover {
+  color: #fff;
+}
+
+#global_header .content {
+  position: relative;
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+
+.ext-logo {
+  font-family: monospace;
+  position: absolute;
+  top: 80px;
+  left: 0px;
+  font-size: 24px;
+  line-height: 25px;
+  width: 140px;
+  font-weight: 700;
+  text-align: right;
+  color: #991f95;
 }
